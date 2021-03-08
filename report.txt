@@ -1,0 +1,304 @@
+1.
+To fix val_test01 I changed the <= on line 80 to be <, and also changed the delete at the end to a free(), because malloc was used to initialize the variable, not the new command.
+
+To fix val_test02 I added {} to the x declaration so that all values are initialised to a value before they are printed.
+
+Both these changes give the same output as before, but without any errors when using valgrind.
+
+
+2. (loop order comparison)
+For this question I used the -O3 flag along with -march=native, and the processor in my laptop is Intel i7-10710U CPU @ 1.10GHz.
+
+For the first part, I first saw how long it takes when the loop order is m->n->k. The total number of read/writes is 2(mnk+mn)~2mnk, because A is read n times (once for each iteration in the n loop) and has size mk. Similarly B is read m times and has size kn (however there might be some speedup if the matrix is small enough so columns of B can be held in cache, because elements are stored column-wise). Here are some performance results for this loop order.
+
+ Dimension       Time    Gflop/s       GB/s        Error
+        16   0.600175   3.332364  26.658912 0.000000e+00
+        64   0.869908   2.299276  18.394205 0.000000e+00
+       112   1.048891   1.907365  15.258920 0.000000e+00
+       160   1.199066   1.673836  13.390692 0.000000e+00
+	...
+
+
+Now when the order is n->m->k the total number of read/writes is still ~mnk and the results are comparable:
+
+ Dimension       Time    Gflop/s       GB/s        Error
+        16   0.628039   3.184519  25.476149 0.000000e+00
+        64   0.908269   2.202165  17.617320 0.000000e+00
+       112   1.141152   1.753156  14.025247 0.000000e+00
+       160   1.155830   1.736449  13.891589 0.000000e+00
+	...
+
+
+When the ordering is changed to n->k->m, there is a noticable speedup (below). This is because columns of B won't need to be read as much; since the matrices are stored column-wise, the columns of B are more likely to be kept in the cache. 
+
+ Dimension       Time    Gflop/s       GB/s        Error
+        16   0.211906   9.438143  75.505143 0.000000e+00
+        64   0.160252  12.481317  99.850538 0.000000e+00
+       112   0.159714  12.526261 100.210091 0.000000e+00
+       160   0.196968  10.189659  81.517269 0.000000e+00
+	...
+
+
+Timings are similar to this case also when the ordering is k->n->m.
+For the case where the ordering is k->m->n the timings are slower than all previous cases.
+For the next part I use the loop ordering n->k->m.
+
+
+2. (blocking)
+In order to compare the effect of changing BLOCK_SIZE I show below the timings and flop rates for calculating the matrix multiplication as BLOCK_SIZE increases. I show the results for BLOCK_SIZE between 24 and 36, with increments of 4. I think the optimal value for BLOCK_SIZE is somewhere between 32 and 36, by looking at how the flop rate changes as the dimension grows. For BLOCK_SIZE <= 32 the flop rate stays above around 10Gflop/s for matrix dimension up to around 1000, but for 36 it seems to drop off before reaching this. I think this is because of the size of my laptop's L1 Cache (32KB). If 3 blocks of BLOCK_SIZE^2 (corresponding to A,B and C) are stored then this is a total of 24.6KB for 32, and 31.1KB for 36, which is very close to the limit.
+
+BLOCK_SIZE = 24:
+ Dimension       Time    Gflop/s
+        24   0.195190  10.246412
+        72   0.166089  12.045410
+       120   0.162625  12.304512
+       168   0.200973   9.956418
+       216   0.193731  10.403827
+       264   0.184702  10.958046
+       312   0.180423  11.110074
+       360   0.181516  11.309530
+       408   0.178846  11.392577
+       456   0.182880  11.406438
+       504   0.180390  11.355335
+       552   0.176672  11.424311
+       600   0.187030  11.548949
+       648   0.192563  11.304279
+       696   0.186218  10.863208
+       744   0.229640  10.760237
+       792   0.279014  10.683184
+       840   0.216528  10.949247
+       888   0.258218  10.847080
+       936   0.307107  10.680658
+       984   0.367226  10.377946
+      1032   0.219873   9.997620
+      1080   0.257056   9.801063
+      1128   0.299964   9.569486
+      1176   0.350491   9.280583
+      1224   0.401051   9.144798
+      1272   0.467683   8.801151
+      1320   0.525823   8.748070
+      1368   0.589835   8.680759
+      1416   0.655358   8.664447
+      1464   0.760028   8.257029
+      1512   0.848863   8.144183
+      1560   0.924628   8.211771
+      1608   1.033340   8.047198
+      1656   1.128329   8.049620
+      1704   1.238933   7.987134
+      1752   1.361228   7.901354
+      1800   1.492255   7.816358
+      1848   1.623520   7.774605
+      1896   1.767515   7.712264
+      1944   1.915169   7.672053
+      1992   2.067698   7.645590
+
+BLOCK_SIZE = 28:
+ Dimension       Time    Gflop/s
+        28   0.183807  10.881013
+        56   0.171459  11.666140
+        84   0.169970  11.772460
+       112   0.177512  11.270316
+       140   0.208539   9.605472
+       168   0.199981  10.005806
+       196   0.199096  10.059762
+       224   0.203429   9.834477
+       252   0.190149  10.604215
+       280   0.187045  10.797287
+       308   0.182938  11.180132
+       336   0.180873  11.324971
+       364   0.178991  11.316745
+       392   0.179113  11.434320
+       420   0.180451  11.496024
+       448   0.184254  11.711938
+       476   0.189846  11.361844
+       504   0.178139  11.498788
+       532   0.185490  11.364269
+       560   0.185172  11.380726
+       588   0.186367  10.908476
+       616   0.209655  11.149002
+       644   0.188410  11.340823
+       672   0.212014  11.450732
+       700   0.187105  10.999169
+       728   0.207551  11.153733
+       756   0.231618  11.192926
+       784   0.256714  11.262886
+       812   0.189086  11.325814
+       840   0.213515  11.103747
+       868   0.238283  10.978055
+       896   0.258264  11.140892
+       924   0.288872  10.923699
+       952   0.326217  10.579488
+       980   0.364414  10.331019
+      1008   0.197845  10.353475
+      1036   0.222882   9.977780
+      1064   0.243176   9.906830
+      1092   0.270049   9.643946
+      1120   0.292391   9.609931
+      1148   0.324260   9.331719
+      1176   0.352742   9.221350
+      1204   0.384524   9.077924
+      1232   0.409695   9.128534
+      1260   0.442678   9.037622
+      1288   0.480871   8.886867
+      1316   0.516578   8.823922
+      1344   0.546724   8.880957
+      1372   0.593420   8.704222
+      1400   0.642402   8.542944
+      1428   0.684070   8.513614
+      1456   0.725989   8.503237
+      1484   0.783165   8.345997
+      1512   0.822355   8.406709
+      1540   0.885196   8.251872
+      1568   0.932349   8.269696
+      1596   0.982666   8.274135
+      1624   1.032802   8.294130
+      1652   1.100262   8.195287
+      1680   1.167238   8.124535
+      1708   1.223099   8.147640
+      1736   1.283657   8.151364
+      1764   1.383342   7.935902
+      1792   1.395081   8.249824
+      1820   1.512331   7.972552
+      1848   1.576562   8.006171
+      1876   1.675815   7.879569
+      1904   1.734883   7.957208
+      1932   1.833230   7.867457
+      1960   1.909804   7.885140
+      1988   2.004236   7.840258
+
+BLOCK_SIZE = 32:
+ Dimension       Time    Gflop/s
+        32   0.219642   9.105859
+        64   0.188057  10.635890
+        96   0.244461   8.186464
+       128   0.227819   8.781879
+       160   0.209203   9.593736
+       192   0.210159   9.564770
+       224   0.193105  10.360275
+       256   0.189600  10.618481
+       288   0.186504  10.758892
+       320   0.184607  11.005064
+       352   0.181694  11.041942
+       384   0.181615  11.223918
+       416   0.180200  11.186196
+       448   0.190857  11.306749
+       480   0.195046  11.340108
+       512   0.187697  11.441223
+       544   0.197084  11.435969
+       576   0.202037  11.350572
+       608   0.196664  11.428395
+       640   0.182528  11.489509
+       672   0.215614  11.259564
+       704   0.184523  11.345345
+       736   0.212314  11.266929
+       768   0.239939  11.327482
+       800   0.184639  11.091894
+       832   0.206595  11.150887
+       864   0.237268  10.873327
+       896   0.263395  10.923884
+       928   0.304851  10.486147
+       960   0.339060  10.437518
+       992   0.385980  10.116504
+      1024   0.217528   9.872210
+      1056   0.245606   9.589226
+      1088   0.264853   9.725480
+      1120   0.303244   9.265989
+      1152   0.327520   9.335765
+      1184   0.366734   9.051770
+      1216   0.398001   9.035383
+      1248   0.433220   8.973567
+      1280   0.467554   8.970740
+      1312   0.513138   8.802320
+      1344   0.562241   8.635849
+      1376   0.608488   8.563147
+      1408   0.644335   8.664150
+      1440   0.709095   8.421961
+      1472   0.754792   8.451347
+      1504   0.824178   8.255674
+      1536   0.862443   8.403748
+      1568   0.935673   8.240318
+      1600   0.984857   8.317957
+      1632   1.059714   8.203552
+      1664   1.105918   8.332344
+      1696   1.206467   8.087085
+      1728   1.257535   8.206182
+      1760   1.347737   8.090267
+      1792   1.401274   8.213362
+      1824   1.511726   8.028445
+      1856   1.591217   8.035901
+      1888   1.684954   7.988179
+      1920   1.761696   8.035312
+      1952   1.874192   7.936982
+      1984   1.957873   7.977569
+
+BLOCK_SIZE = 36:
+ Dimension       Time    Gflop/s
+        36   0.186235  10.739396
+        72   0.169178  11.825495
+       108   0.163001  12.272458
+       144   0.163568  12.231034
+       180   0.177421  11.307584
+       216   0.195390  10.315488
+       252   0.185762  10.854630
+       288   0.183841  10.914782
+       324   0.183034  11.149494
+       360   0.184311  11.138055
+       396   0.189936  11.116234
+       432   0.186931  11.213528
+       468   0.199704  10.265491
+       504   0.186760  10.967979
+       540   0.200154  11.013988
+       576   0.208718  10.987224
+       612   0.215579  10.632786
+       648   0.205347  10.600491
+       684   0.240803  10.631531
+       720   0.214246  10.452891
+       756   0.251947  10.289808
+       792   0.293826  10.144650
+       828   0.225129  10.086030
+       864   0.267081   9.659582
+       900   0.306080   9.526931
+       936   0.349899   9.374437
+       972   0.399310   9.199175
+      1008   0.229252   8.935091
+      1044   0.263580   8.634149
+      1080   0.292700   8.607529
+      1116   0.335888   8.276138
+      1152   0.365792   8.358984
+      1188   0.414119   8.097561
+      1224   0.459712   7.977903
+      1260   0.508351   7.870053
+      1296   0.556703   7.820265
+      1332   0.616039   7.672453
+      1368   0.675082   7.584585
+      1404   0.744307   7.436684
+      1440   0.801219   7.453606
+      1476   0.872939   7.367242
+      1512   0.947189   7.298751
+      1548   1.020380   7.270776
+      1584   1.093754   7.267349
+      1620   1.180705   7.201680
+      1656   1.263347   7.189331
+      1692   1.362571   7.110038
+      1728   1.438400   7.174331
+      1764   1.549665   7.084154
+      1800   1.638915   7.116905
+      1836   1.747883   7.081671
+      1872   1.869549   7.017957
+      1908   1.967008   7.062507
+      1944   2.080476   7.062461
+      1980   2.201101   7.053189
+
+I'm not 100% on the theoretical peak flop rate but from the paper in the slack's #reading channel I think that my laptop's theoretical peak flop rate is 26.4GFlop/s. This is because the frequency is 1.1GHz, the number of cores per node is 6 and I think the number of operations per instruction is 4. I'm not sure about the number of flops per operation or instructions per cycle but I think these might be 1? 
+In this case my computer achieves 35-40% of the theoretical peak flop rate.
+
+
+3.
+For this part I added more terms to the Taylor expansion in the function sin4_intrin (the AVX part). The output shows a speedup over the sin4_taylor function.
+
+Reference time: 23.3077
+Taylor time:    13.2785      Error: 6.928125e-12
+Intrin time:    8.6613      Error: 6.928125e-12
+Vector time:    10.5931      Error: 2.454130e-03
+
+
