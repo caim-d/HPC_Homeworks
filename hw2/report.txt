@@ -296,9 +296,9 @@ In this case my computer achieves 35-40% of the theoretical peak flop rate.
 3.
 For this part I added more terms to the Taylor expansion in the function sin4_intrin (the AVX part). The output shows a speedup over the sin4_taylor function.
 
-Reference time: 23.3077
-Taylor time:    13.2785      Error: 6.928125e-12
-Intrin time:    8.6613      Error: 6.928125e-12
-Vector time:    10.5931      Error: 2.454130e-03
+Reference time: 12.5731
+Taylor time:    1.1968      Error: 6.928125e-12
+Intrin time:    0.7642      Error: 6.928125e-12
+Vector time:    0.6919      Error: 2.454130e-03
 
 
