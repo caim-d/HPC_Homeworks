@@ -1,0 +1,140 @@
+1a.
+In the first loop the first thread executes the function f for i=1 to n/2, and this takes
+1/2*(n/2)*(n/2+1) = (n^2+2n)/8 milliseconds.
+The second thread executes the function for i=n/2 to n, which takes (3n^2+2n)/8 milliseconds.
+The first thread spends n^2/4 milliseconds waiting in the first loop.
+
+In the second loop the threads do the opposite work so the first thread takes
+(3n^2+2n)/8 milliseconds and the second takes (n^2+2n)/8 milliseconds. The second
+thread spends n^2/4 milliseconds waiting.
+
+The total time to execute the parallel region is (3n^2+2n)/4 milliseconds.
+
+1b.
+With schedule(static,1), for the first loop the first thread executes f for every
+other i (i=1,3,5,...). The time spent can then be calculated as n^2/4.
+The time the second thread takes is (n^2+2n)/4.
+The time spent in the whole parallel region is (n^2+2n)/2, which is a 33% speedup.
+
+1c.
+With schedule(dynamic,1) I think this means that the time spent in each loop is
+(n^2+n)/4 because this is just the time needed to execute f for each i, split
+evenly between 2 threads. So the total time is (n^2+n)/2.
+
+1d.
+We can use the directive nowait to eliminate waiting time in the original problem,
+and then each thread takes (n^2+2n)/8 + (3n^2+2n)/8 = (n^2+n)/2 milliseconds.
+
+
+2.
+For omp_bug2.c I made tid and total private when starting the parallel region.
+
+For omp_bug3.c I took out omp barrier in print_results subroutine, as only the 2
+threads which were executing the sections could see them.
+
+For omp_bug4.c I changed the stack size (memory limit for each thread) in the terminal using,
+
+ulimit -s 32768
+
+however I don't know how to do this in a makefile so this program won't run.
+
+
+For omp_bug5.c I'm stuck because I can get the program to not hang by changing the order
+of the locks as I've submitted, but the resulting a and b are different to each
+other and I think they should be the same?
+
+For omp_bug6.c I moved parallel region inside dotprod and made tid private inside the
+new parallel region, and also added return statement.
+
+
+3.
+I am running this code on a laptop with an x86 architecture and 12 CPU cores.
+The timings for the parallel scan function are below, along with the speed of
+the serial version, separated by the number of threads used.
+
+sequential-scan = 0.579226s
+
+num_threads = 2
+parallel-scan   = 0.893013s
+
+num_threads = 4
+parallel-scan   = 0.436570s
+
+num_threads = 6
+parallel-scan   = 0.305052s
+
+num_threads = 8
+parallel-scan   = 0.326981s
+
+num_threads = 10
+parallel-scan   = 0.280939s
+
+num_threads = 12
+parallel-scan   = 0.241692s
+
+
+4.
+I show first the timings for 5000 iterations each time, with N=100. The Jacobi
+algorithm gives a residual norm of 7.284635 and the Gauss-Seidel algorithm
+gives a residual norm of 0.917052, both starting from an initial residual norm of 100.
+The timings for the Jacobi and Gauss-Seidel algorithms are,
+
+Jacobi:
+num_threads = 1
+Time taken = 1.35669
+
+num_threads = 4
+Time taken = 0.473902
+
+num_threads = 8
+Time taken = 0.558517
+
+num_threads = 12
+Time taken = 0.551318
+
+
+Gauss-Seidel
+num_threads = 1
+Time taken = 1.64791
+
+num_threads = 4
+Time taken = 0.538152
+
+num_threads = 8
+Time taken = 0.702642
+
+num_threads = 12
+Time taken = 0.690516
+
+
+For N=200, the Jacobi algorithm gives a residual norm of 88.529099 and
+the Gauss-Seidel algorithm gives a residual norm of 67.923479,
+both starting from an initial residual norm of 200.
+The timings for the Jacobi and Gauss-Seidel algorithms are,
+
+Jacobi:
+num_threads = 1
+Time taken = 5.96855
+
+num_threads = 4
+Time taken = 1.66146
+
+num_threads = 8
+Time taken = 1.67066
+
+num_threads = 12
+Time taken = 1.33942
+
+
+Gauss-Seidel
+num_threads = 1
+Time taken = 6.71592
+
+num_threads = 4
+Time taken = 1.96111
+
+num_threads = 8
+Time taken =Time taken = 1.94624
+
+num_threads = 12
+Time taken = 1.70719
