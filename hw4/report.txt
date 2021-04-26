@@ -1,0 +1,24 @@
+1.
+Using the pingpong code given in class I find that the latency on Greene is
+1.736660e-04 ms, and the bandwidth is 1.270621e+01 GB/s. I ran this on Greene using
+the file q1.sbatch (and the job files for the next questions were similar to this).
+
+2.
+I use N=10000 in this question and check that the code is correct as as the end,
+the value of x held by processor 0 should be N*(1+2+...+(mpisize-1)).
+I run this code on greene, and find that the latency is 1.085653e-03 ms, which is comparable
+to the result from question 1.
+To estimate the bandwidth I move an array of integers with 500000 elements around
+the processors. I then find that the bandwidth is 12.491280 GB/s, which is again comparable to
+question 1.
+I split up the file int_ring.cpp into a parts that address each of these questions.
+
+3.
+I Implemented an MPI version of the scan function from the last homework. I assumed
+that the number of elements in the vector, N, was divisible by the number of processors
+I would use. This code is found in the file mpi-scan.cpp.
+
+4.
+For my final project I will be working with Huan on implementing and parallelizing
+the FFT algorithm. We will look as implementing it using MPI and OMP, and then possibly
+using CUDA too.
